@@ -2,11 +2,11 @@
 <script src="../pouchdb/dist/pouchdb.js"></script>
 <link rel="import" href="../polymer/polymer.html">
 
-<dom-module id="pouch-db">
+<dom-module id="vaadin-pouchdb">
 </dom-module>
 <script>
   Polymer({
-    is: 'pouch-db',
+    is: 'vaadin-pouchdb',
     properties: {
       dbname: {
         type: String,
@@ -19,11 +19,11 @@
     },
     _db: null,
 
-    attached: function() {
-      console.log('new Pouch ' + this.dbname);
+    create: function() {
+      console.log('new vaadin-pouchdb dbname=' + this.dbname);
       this._db = new PouchDB(this.dbname);
     },
-    
+
     /**
      * Info
      *
@@ -33,9 +33,9 @@
      * @param {Function} err
      */
     info: function(info, fnc, err) {
-       this._db.changes({since: info.update_seq, onError: err, onChange: fnc, continuous: true});
+       return this._db.changes({since: info.update_seq, onError: err, onChange: fnc, continuous: true});
     },
-    
+
     /**
      * Post
      *
@@ -45,32 +45,23 @@
      * @param {Function} err
      */
     post: function(obj, fnc, err) {
-      this._db.post(obj, function(error, result) {
+      return this._db.post(obj, function(error, result) {
         if (!error) {
           if (fnc) fnc(result);
         } else {
           if (err) err(error)
-          else console.log(error)
         }
-      });      
+      });
     },
-     
+
     /**
-     * Post
+     * allDocs
      *
-     * @method post
-     * @param {Function} fnc
-     * @param {Function} err
+     * @method allDocs
+     * @return {Promise} a promise
      */
-    allDocs: function(fnc, err) {
-      this._db.allDocs({include_docs: true}, function(error, result) {
-        if (!error) {
-          if (fnc) fnc(result);
-        } else {
-          if (err) err(error)
-          else console.log(error)
-        }
-      });      
+    allDocs: function() {
+      return this._db.allDocs({include_docs: true});
     },
 
     /**
@@ -78,21 +69,23 @@
      *
      * @method remove
      * @param {Object} obj
+     * @return {Promise} a promise
      */
     remove: function(obj) {
-      this._db.remove(obj);      
-    },    
-     
+      return this._db.remove(obj);
+    },
+
     /**
      * Put
      *
      * @method put
      * @param {Object} obj
+     * @return {Promise} a promise
      */
     put: function(obj) {
-      this._db.put(obj);      
+      return this._db.put(obj);
     },
-    
+
     sync: function(syncError) {
       var remote = new PouchDB(this.remote, {headers: {'Cookie': 'Todo'}});
       var pushRep = this._db.replicate.to(remote, {
@@ -102,8 +95,23 @@
       var pullRep = this._db.replicate.from(remote, {
         continuous: true,
         complete: syncError
-      });      
+      });
     }
-    
+
   });
+</script>
+
+<script>
+Polymer.Vaadin = Polymer.Vaadin || {};
+
+/**
+ * @polymerBehavior Promise
+ */
+Polymer.Vaadin.Promise = {
+  /**
+   * @method exec
+   * @param {Function} func
+   */
+  then: function(func){}
+};
 </script>
