@@ -8,6 +8,12 @@
   <link rel="import" href="vaadin-pouchdb.html">
 </head>
 <body>
-  <vaadin-pouchdb dbname='foo'></vaadin-pouchdb>
+
+<!--  Uncomment the appropriate line and change credentials to use couchdb, cloudant or pouchdb instance -->
+
+<!--   <vaadin-pouchdb index='ts' dbname='http://user:password@localhost:5984/foo' /> -->
+<!--   <vaadin-pouchdb index='ts' dbname='https://user:password@bar.cloudant.com/foo' /> -->
+  <vaadin-pouchdb dbname='foo' index='ts'/>
+
 </body>
 </html>
