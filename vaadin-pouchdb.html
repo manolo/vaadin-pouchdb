@@ -168,11 +168,16 @@
       var opts = this.live ? {live: true, retry: true} : {};
       // TODO: normally the sync is in paused status, seems that active is
       // only for the very short time some data is being transferred.
-      this._db.sync(this.remote, opts)
-        .on('change', fnc)
-        .on('paused', fnc)
-        .on('active', fnc)
-        .on('error', err)
+      var h = this._db.sync(this.remote, opts);
+      if (fnc) {
+        h.on('change', fnc)
+         .on('paused', fnc)
+         .on('active', fnc)
+      }
+      if (err) {
+        h.on('error', err)
+      }
+      this._synchandler = this.live ? h : null;
     }
   });
 </script>
