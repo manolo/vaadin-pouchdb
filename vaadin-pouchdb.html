@@ -54,7 +54,7 @@
      *
      * @method post
      * @param {Object} obj
-     * @return {Promise} a promise
+     * @return {DbPromise} a promise
      */
     post: function(obj) {
       return this._db.post(obj);
@@ -65,7 +65,7 @@
      *
      * @method remove
      * @param {Object} obj
-     * @return {Promise} a promise
+     * @return {DbPromise} a promise
      */
     remove: function(obj) {
       return this._db.remove(obj);
@@ -92,7 +92,7 @@
      *
      * @method put
      * @param {Object} obj
-     * @return {Promise} a promise
+     * @return {DbPromise} a promise
      */
     put: function(obj) {
       return this._db.put(obj);
@@ -102,7 +102,7 @@
      * allDocs
      *
      * @method allDocs
-     * @return {Promise} a promise
+     * @return {DbPromise} a promise
      */
     allDocs: function() {
       return this.query();
@@ -115,7 +115,7 @@
      * @method query
      * @param {string} query, by default use the index attribute
      * @param {Conf} conf, by default  include_docs=true
-     * @return {Promise} a promise
+     * @return {DbPromise} a promise
      */
     query: function(query, conf) {
       return new Promise(function(resolve, reject) {
@@ -186,9 +186,9 @@
 Polymer.Vaadin = Polymer.Vaadin || {};
 
 /**
- * @polymerBehavior Promise
+ * @polymerBehavior DbPromise
  */
-Polymer.Vaadin.Promise = {
+Polymer.Vaadin.DbPromise = {
   /**
    * @method
    * @param {Function} func
@@ -197,9 +197,10 @@ Polymer.Vaadin.Promise = {
 
   /**
    * @method
+   * @param {String} evntName
    * @param {Function} func
    */
-  on: function(func){}
+  on: function(evntName, func){}
    // TODO: catch cancel
 };
 
