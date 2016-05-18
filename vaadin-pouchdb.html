@@ -9,7 +9,6 @@
     properties: {
       dbname: {
         type: String,
-        value: 'default-db',
         observer: '_dbnameChanged'
       },
       live: {
@@ -18,7 +17,8 @@
       },
       remote: {
         type: String,
-        value: null
+        value: null,
+        observer: '_remoteChanged'
       },
       index: {
         type: String,
@@ -26,15 +26,44 @@
       },
       descending: {
         type: Boolean
+      },
+      attachments: {
+        type: Object,
+        notify: true
+      },
+      data: {
+        type: Array,
+        notify: true,
+        value: function() {
+          return [];
+        }
+      },
+      status: {
+        type: String,
+        notify: true
       }
     },
 
+    _indexes: [],
     _db: null,
     _oldname: null,
+    _synchandler: undefined,
+    _changesHandler: undefined,
+
+    getAttachment: function(docId, attachmentName) {
+      return this._db.getAttachment(docId, attachmentName);
+    },
+
     _dbnameChanged: function() {
-      if (this.dbname != this._oldname) {
+      this.cancelChanges()
+      if (this.dbname && this.dbname != this._oldname) {
         this._db = new PouchDB(this.dbname);
       }
+    },
+
+    _remoteChanged: function() {
+      this.cancelSync();
+      this.sync();
     },
 
     /**
@@ -61,6 +90,28 @@
     },
 
     /**
+     * Put
+     *
+     * @method put
+     * @param {Object} obj must have an _id
+     * @return {DbPromise} a promise
+     */
+    put: function(obj) {
+      return this._db.put(obj);
+    },
+
+    /**
+     * Save
+     *
+     * @method remove
+     * @param {Object} obj
+     * @return {DbPromise} a promise
+     */
+    save: function(obj) {
+      return obj._id ? this._db.put(obj) : this._db.post(obj);
+    },
+
+    /**
      * Remove
      *
      * @method remove
@@ -78,24 +129,14 @@
      * @param {Function} func
      */
     changes: function(func) {
-      this._db.changes({
+      this._changesHandler = this._db.changes({
         since: 'now',
         live: true,
         include_docs: true
       }).on('change', function(obj){
         func(obj.doc);
       });
-    },
-
-    /**
-     * Put
-     *
-     * @method put
-     * @param {Object} obj
-     * @return {DbPromise} a promise
-     */
-    put: function(obj) {
-      return this._db.put(obj);
+      return this._changesHandler;
     },
 
     /**
@@ -118,26 +159,30 @@
      * @return {DbPromise} a promise
      */
     query: function(query, conf) {
+      this.status = 'querying';
       return new Promise(function(resolve, reject) {
         conf = conf || {include_docs: true, descending: this.descending};
         query = query || this._indexes && this._indexes[0];
         (query ? this._db.query(query, conf) : this._db.allDocs(conf))
         .then(function(req) {
-          var r = [];
-          for (i = 0 ; i < req.rows.length; i++) {
-            r.push(req.rows[i].doc);
+          if (req.rows) {
+            this.data = req.rows.map(function(row) {
+              return row.doc;
+            });
           }
-          resolve(r);
-        });
+          this.status = undefined;
+          resolve(this.data);
+        }.bind(this));
       }.bind(this));
     },
-    _indexes: [],
+
     _indexChanged: function() {
       this._indexes = this.index && this.index.split(/[ *, *]/) || [];
       for (var i = 0; i < this._indexes.length; i++) {
         this.createIndex(this._indexes[i])
       }
     },
+
     createIndex: function(prop) {
       var views = {};
       views[prop] = {
@@ -155,7 +200,6 @@
         if (err.name != 'conflict') throw(err);
       });
     },
-    _synchandler: undefined,
     /**
      * Sync
      *
@@ -165,10 +209,16 @@
      */
     sync: function(fnc, err) {
       if (!this.remote || this._synchandler) return;
-      var opts = this.live ? {live: true, retry: true} : {};
+      var opts = this.live ? {live: true, retry: true, timeout: 0} : {};
       // TODO: normally the sync is in paused status, seems that active is
       // only for the very short time some data is being transferred.
       var h = this._db.sync(this.remote, opts);
+      h.on('paused', function() {
+          this.status = undefined;
+        }.bind(this))
+        .on('active', function() {
+          this.status = 'syncing';
+        }.bind(this));
       if (fnc) {
         h.on('change', fnc)
          .on('paused', fnc)
@@ -178,7 +228,23 @@
         h.on('error', err)
       }
       this._synchandler = this.live ? h : null;
+      return h;
+    },
+
+    cancelSync: function() {
+      if (this._synchandler) {
+        this._synchandler.cancel();
+        this._synchandler = null;
+      }
+    },
+
+    cancelChanges: function() {
+      if (this._changesHandler) {
+        this._changesHandler.cancel();
+        this._changesHandler = null;
+      }
     }
+
   });
 </script>
 
