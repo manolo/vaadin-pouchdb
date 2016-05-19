@@ -46,24 +46,50 @@
 
     _indexes: [],
     _db: null,
+    _remotedb: null,
     _oldname: null,
-    _synchandler: undefined,
-    _changesHandler: undefined,
+    _synchandler: null,
+    _changesHandler: null,
+    _query: null,
 
     getAttachment: function(docId, attachmentName) {
       return this._db.getAttachment(docId, attachmentName);
     },
 
     _dbnameChanged: function() {
-      this.cancelChanges()
-      if (this.dbname && this.dbname != this._oldname) {
+      this.cancelChanges();
+      this.close();
+      if (this.dbname) {
         this._db = new PouchDB(this.dbname);
       }
     },
 
     _remoteChanged: function() {
       this.cancelSync();
-      this.sync();
+      if (this.remote) this.sync()
+       .on('change', function(o) {
+         // For some reason after syncing PouchDB sends out one change event per doc
+         // Restarting sync seems mitigate the issue.
+         if (o && (o.changes && o.changes.array || o.change && o.change.docs).length > 1) {
+           this.cancelSync();
+           this.sync();
+         }
+       }.bind(this));
+    },
+
+    close: function(destroy) {
+      if (this._db) {
+        if (destroy) {
+          this._db.destroy();
+        } else {
+          this._db.close();
+        }
+        this._db = null;
+      }
+    },
+
+    then: function() {
+      return this._db;
     },
 
     /**
@@ -128,8 +154,8 @@
      * @method
      * @param {Function} func
      */
-    changes: function(func) {
-      this._changesHandler = this._db.changes({
+    changes: function(func, conf) {
+      this._changesHandler = this._db.changes(conf || {
         since: 'now',
         live: true,
         include_docs: true
@@ -159,11 +185,11 @@
      * @return {DbPromise} a promise
      */
     query: function(query, conf) {
-      this.status = 'querying';
-      return new Promise(function(resolve, reject) {
-        conf = conf || {include_docs: true, descending: this.descending};
-        query = query || this._indexes && this._indexes[0];
-        (query ? this._db.query(query, conf) : this._db.allDocs(conf))
+      conf = conf || {include_docs: true, descending: this.descending};
+      query = query || this._indexes && this._indexes[0];
+      this.status ='querying';
+      return (this._query = this._query ||
+        (query ? this._db.query(query, conf) : this._db.allDocs(conf)))
         .then(function(req) {
           if (req.rows) {
             this.data = req.rows.map(function(row) {
@@ -171,9 +197,8 @@
             });
           }
           this.status = undefined;
-          resolve(this.data);
-        }.bind(this));
-      }.bind(this));
+          this._query = null;
+        }.bind(this));;
     },
 
     _indexChanged: function() {
@@ -192,7 +217,6 @@
         _id: '_design/' + prop,
         views: views
       };
-      console.log("Created index: ", prop, idx);
       this._db.put(idx)
       .then(function () {
         return this._db.query(prop, {stale: 'update_after'});
@@ -207,9 +231,14 @@
      * @param {Function} fnc
      * @param {Function} err
      */
-    sync: function(fnc, err) {
-      if (!this.remote || this._synchandler) return;
-      var opts = this.live ? {live: true, retry: true, timeout: 0} : {};
+    sync: function(fnc, err, conf) {
+      if (!this.remote || this._synchandler) return this._synchandler;
+      var opts = conf || {
+        timeout: 0
+      };
+      if (this.live) {
+        opts.live = opts.retry = true;
+      }
       // TODO: normally the sync is in paused status, seems that active is
       // only for the very short time some data is being transferred.
       var h = this._db.sync(this.remote, opts);
