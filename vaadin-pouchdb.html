@@ -49,6 +49,9 @@
       status: {
         type: String,
         notify: true
+      },
+      queryString: {
+        type: String
       }
     },
 
@@ -62,7 +65,6 @@
     _oldname: null,
     _synchandler: null,
     _changesHandler: null,
-    _query: null,
 
     _onDataChanged: function(e) {
       if (this.autoSave) {
@@ -218,16 +220,16 @@
      * Get all docs matching the query string if provided,
      * otherwise we will use the default index defined as an attribute.
      *
-     * @method query
+     * @method query, by default it uses the queryString instead.
      * @param {string} query, by default use the index attribute
-     * @param {Conf} conf, by default  include_docs=true
+     * @param {Conf} conf, by default  {include_docs=true}
      * @return {DbPromise} a promise
      */
     query: function(query, conf) {
       conf = conf || {include_docs: true, descending: this.descending};
       query = query || this._indexes && this._indexes[0];
       this.status ='querying';
-      return (this._query = this._query ||
+      return (this.queryString = this.queryString ||
         (query ? this._db.query(query, conf) : this._db.allDocs(conf)))
         .then(function(req) {
           if (req.rows) {
@@ -236,7 +238,6 @@
             });
           }
           this.status = undefined;
-          this._query = null;
         }.bind(this));;
     },
 
