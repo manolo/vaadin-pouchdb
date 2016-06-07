@@ -24,10 +24,15 @@ Nothing else needed for observing connectivity, changes in a list, etc.
       </table>
      </vaadin-grid>
 ```
+
 ```
+    // Add a new item to the database.
+    // We could use db.data instead of grid.items.
     this.$.grid.push('items', { name: 'Manolo', country: 'Spain'});
+    // Modify an item in the database
     this.$.grid.set('items.0.country', 'Finland');
-    this.$.grid.pop();
+    // Remove an item from the database
+    this.$.grid.pop('items');
 ```
 
 - Use a local database `chat` which will be synchronised with the one specified in the `remote` parameter.
