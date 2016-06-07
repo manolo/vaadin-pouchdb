@@ -3,17 +3,10 @@ vaadin-pouchdb
 
 A polymer web component wrapping [PouchDB](http://pouchdb.com/).
 
-It's goal is the 
+It's goal is the simplicity of setting up an application which works online / offline.
+Nothing else needed for observing connectivity, changes in a list, etc.
 
-## Example
-
-use the local database `chat` which will be synchronised with the one specified in the `remote` parameter. Remote could be either couchdb or pouchdb. If you don't specify any remote, it will be use a local instance only.
-
-By default, any changes in the `data` array will be propagated to the database, and any change in the database to the array, so as you can use polymer databinding as usual.
-
-Also by default, it queries all items in the database, but you could configure the `queryString` parameter, or just set an index to use it.
-
-The index parameter uses the provided attribute to query the database and sort the data, also it adds the index to the database if it does not exist yet, the user has to be allown to create the index though.
+## Quick Start
 
 ```
     <vaadin-pouchdb id="db"
@@ -22,7 +15,30 @@ The index parameter uses the provided attribute to query the database and sort t
       data="{{items}}"
       remote="http://user:password@localhost:5984/chat"
      ></vaadin-pouchdb>
+     
+     <vaadin-grid id="grid" items="{{items}}">
+      <table>
+        <colgroup>
+         <col /><col />
+         </colgroup>
+      </table>
+     </vaadin-grid>
 ```
+```
+    this.$.grid.push('items', { name: 'Manolo', country: 'Spain'});
+    this.$.grid.set('items.0.country', 'Finland');
+    this.$.grid.pop();
+```
+
+- Use a local database `chat` which will be synchronised with the one specified in the `remote` parameter.
+    - Remote could be either couchdb or pouchdb. If you don't specify any remote, it will be use a local instance only.
+- Any changes in the `data` array using the `Polymer` API will be propagated to the database, and any change in the database to the array.
+    - Use polymer data-binding as usual.
+- Create an index `ts`, and use it to query the database.
+    - If not provided it get all items sorted by `_id`
+- It queries all items in the database (no filtering)
+    - You could configure the `queryString` parameter though.
+
 
 ## For GWT users
 
