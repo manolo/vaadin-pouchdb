@@ -5,7 +5,9 @@ A polymer web component wrapping [PouchDB](http://pouchdb.com/).
 
 It's goal is the 
 
-## Example: use the local database `chat` which will be synchronised with the one specified in the `remote` parameter. Remote could be either couchdb or pouchdb. If you don't specify any remote, it will be use a local instance only.
+## Example
+
+use the local database `chat` which will be synchronised with the one specified in the `remote` parameter. Remote could be either couchdb or pouchdb. If you don't specify any remote, it will be use a local instance only.
 
 By default, any changes in the `data` array will be propagated to the database, and any change in the database to the array, so as you can use polymer databinding as usual.
 
