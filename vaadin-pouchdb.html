@@ -11,7 +11,15 @@
         type: String,
         observer: '_dbnameChanged'
       },
-      live: {
+      liveSync: {
+        type: Boolean,
+        value: true
+      },
+      autoSave: {
+        type: Boolean,
+        value: true
+      },
+      autoChanges: {
         type: Boolean,
         value: true
       },
@@ -44,6 +52,10 @@
       }
     },
 
+    observers: [
+      '_onDataChanged(data.*)'
+    ],
+
     _indexes: [],
     _db: null,
     _remotedb: null,
@@ -51,6 +63,25 @@
     _synchandler: null,
     _changesHandler: null,
     _query: null,
+
+    _onDataChanged: function(e) {
+      if (this.autoSave) {
+        if (e.path == 'data.splices') {
+          for (var i in e.value.indexSplices) {
+            var is = e.value.indexSplices[i];
+            for (var r in is.removed) {
+              this.remove(is.removed[r]);
+            }
+            for (var a = is.index; a < is.index + is.addedCount; a++) {
+              this.post(is.object[a]);
+            }
+          }
+        } else if (/#\d/.test(e.path)) {
+          var obj = e.base[parseInt(/#(\d+)/.exec(e.path)[1])];
+          this.post(obj);
+        }
+      }
+    },
 
     getAttachment: function(docId, attachmentName) {
       return this._db.getAttachment(docId, attachmentName);
@@ -61,12 +92,18 @@
       this.close();
       if (this.dbname) {
         this._db = new PouchDB(this.dbname);
+        this._remoteChanged();
+        if (this.autoChanges) {
+          this.changes(function() {
+            this.query();
+          }.bind(this));
+        }
       }
     },
 
     _remoteChanged: function() {
       this.cancelSync();
-      if (this.remote) this.sync()
+      if (this._db && this.remote) this.sync()
        .on('change', function(o) {
          // For some reason after syncing PouchDB sends out one change event per doc
          // Restarting sync seems mitigate the issue.
@@ -77,6 +114,12 @@
        }.bind(this));
     },
 
+    /**
+     * Close the DB and remove local instance in case
+     *
+     * @method close
+     * @param {Boolean} destroy if true local database would be removed when closed.
+     */
     close: function(destroy) {
       if (this._db) {
         if (destroy) {
@@ -86,10 +129,6 @@
         }
         this._db = null;
       }
-    },
-
-    then: function() {
-      return this._db;
     },
 
     /**
@@ -232,11 +271,11 @@
      * @param {Function} err
      */
     sync: function(fnc, err, conf) {
-      if (!this.remote || this._synchandler) return this._synchandler;
+      if (!this._db || !this.remote || this._synchandler) return this._synchandler;
       var opts = conf || {
         timeout: 0
       };
-      if (this.live) {
+      if (this.liveSync) {
         opts.live = opts.retry = true;
       }
       // TODO: normally the sync is in paused status, seems that active is
@@ -260,6 +299,9 @@
       return h;
     },
 
+    /**
+     * Cancel the synchronisation with remote process.
+     */
     cancelSync: function() {
       if (this._synchandler) {
         this._synchandler.cancel();
@@ -267,6 +309,9 @@
       }
     },
 
+    /**
+     * Cancel observing changes.
+     */
     cancelChanges: function() {
       if (this._changesHandler) {
         this._changesHandler.cancel();
