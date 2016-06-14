@@ -15,14 +15,8 @@
         type: Boolean,
         value: true
       },
-      autoSave: {
-        type: Boolean,
-        value: true
-      },
-      autoChanges: {
-        type: Boolean,
-        value: true
-      },
+      noAutoSave: Boolean,
+      noAutoChanges: Boolean,
       remote: {
         type: String,
         value: null,
@@ -67,7 +61,7 @@
     _changesHandler: null,
 
     _onDataChanged: function(e) {
-      if (this.autoSave) {
+      if (!this.noAutoSave) {
         if (e.path == 'data.splices') {
           for (var i in e.value.indexSplices) {
             var is = e.value.indexSplices[i];
@@ -95,10 +89,11 @@
       if (this.dbname) {
         this._db = new PouchDB(this.dbname);
         this._remoteChanged();
-        if (this.autoChanges) {
+        if (!this.noAutoChanges) {
           this.changes(function() {
             this.query();
           }.bind(this));
+          this.query();
         }
       }
     },
