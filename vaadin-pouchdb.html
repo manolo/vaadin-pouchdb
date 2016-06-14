@@ -227,10 +227,8 @@
      */
     query: function(query, conf) {
       conf = conf || {include_docs: true, descending: this.descending};
-      query = query || this._indexes && this._indexes[0];
-      this.status ='querying';
-      return (this.queryString = this.queryString ||
-        (query ? this._db.query(query, conf) : this._db.allDocs(conf)))
+      query = this.queryString || query || this._indexes && this._indexes[0];
+      return (query ? this._db.query(query, conf) : this._db.allDocs(conf))
         .then(function(req) {
           if (req.rows) {
             this.data = req.rows.map(function(row) {
