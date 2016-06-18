@@ -84,9 +84,11 @@
     },
 
     _dbnameChanged: function() {
+      this.cancelSync();
       this.cancelChanges();
       this.close();
       if (this.dbname) {
+        console.log("PouchDB local connection to: " + this.dbname);
         this._db = new PouchDB(this.dbname);
         this._remoteChanged();
         if (!this.noAutoChanges) {
@@ -100,7 +102,8 @@
 
     _remoteChanged: function() {
       this.cancelSync();
-      if (this._db && this.remote) this.sync()
+      if (this._db && this.remote)
+       this.sync()
        .on('change', function(o) {
          // For some reason after syncing PouchDB sends out one change event per doc
          // Restarting sync seems mitigate the issue.
@@ -137,7 +140,10 @@
      * @param {Function} err
      */
     info: function(info, fnc, err) {
-       return this._db.changes({since: info.update_seq, onError: err, onChange: fnc, continuous: true});
+      this.status = 'info';
+      return this._db
+        .changes({since: info.update_seq, onError: err, onChange: fnc, continuous: true})
+        .then(this._statusdone.bind(this));
     },
 
     /**
@@ -148,7 +154,8 @@
      * @return {DbPromise} a promise
      */
     post: function(obj) {
-      return this._db.post(obj);
+      this.status = 'post';
+      return this._db.post(obj).then(this._statusdone.bind(this));
     },
 
     /**
@@ -159,7 +166,8 @@
      * @return {DbPromise} a promise
      */
     put: function(obj) {
-      return this._db.put(obj);
+      this.status = 'put';
+      return this._db.put(obj).then(this._statusdone.bind(this));
     },
 
     /**
@@ -181,7 +189,8 @@
      * @return {DbPromise} a promise
      */
     remove: function(obj) {
-      return this._db.remove(obj);
+      this.status = 'remove';
+      return this._db.remove(obj).then(this._statusdone.bind(this));
     },
 
     /**
@@ -191,6 +200,7 @@
      * @param {Function} func
      */
     changes: function(func, conf) {
+      console.log("PouchDB listening to changes in: " + this.dbname);
       this._changesHandler = this._db.changes(conf || {
         since: 'now',
         live: true,
@@ -221,6 +231,7 @@
      * @return {DbPromise} a promise
      */
     query: function(query, conf) {
+      this.status = 'query';
       conf = conf || {include_docs: true, descending: this.descending};
       query = this.queryString || query || this._indexes && this._indexes[0];
       return (query ? this._db.query(query, conf) : this._db.allDocs(conf))
@@ -230,8 +241,8 @@
               return row.doc;
             });
           }
-          this.status = undefined;
-        }.bind(this));;
+        }.bind(this))
+        .then(this._statusdone.bind(this));;
     },
 
     _indexChanged: function() {
@@ -265,6 +276,7 @@
      * @param {Function} err
      */
     sync: function(fnc, err, conf) {
+      console.log("PouchDB syncing local: " + this.dbname + " to: " + this.remote);
       if (!this._db || !this.remote || this._synchandler) return this._synchandler;
       var opts = conf || {
         timeout: 0
@@ -275,8 +287,9 @@
       // TODO: normally the sync is in paused status, seems that active is
       // only for the very short time some data is being transferred.
       var h = this._db.sync(this.remote, opts);
-      h.on('paused', function() {
-          this.status = undefined;
+      h.on('paused', this._statusdone.bind(this))
+        .on('change', function() {
+          this.status = 'change';
         }.bind(this))
         .on('active', function() {
           this.status = 'syncing';
@@ -311,6 +324,10 @@
         this._changesHandler.cancel();
         this._changesHandler = null;
       }
+    },
+
+    _statusdone: function() {
+      this.status = 'done';
     }
 
   });
