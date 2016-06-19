@@ -7,25 +7,15 @@
   Polymer({
     is: 'vaadin-pouchdb',
     properties: {
-      dbname: {
-        type: String,
-        observer: '_dbnameChanged'
-      },
       liveSync: {
         type: Boolean,
         value: true
       },
+      index: String,
       noAutoSave: Boolean,
       noAutoChanges: Boolean,
-      remote: {
-        type: String,
-        value: null,
-        observer: '_remoteChanged'
-      },
-      index: {
-        type: String,
-        observer: '_indexChanged'
-      },
+      dbname: String,
+      remote: String,
       descending: {
         type: Boolean
       },
@@ -50,6 +40,8 @@
     },
 
     observers: [
+      '_dbnameChanged(dbname)',
+      '_remoteChanged(remote)',
       '_onDataChanged(data.*)'
     ],
 
@@ -90,6 +82,10 @@
       if (this.dbname) {
         console.log("PouchDB local connection to: " + this.dbname);
         this._db = new PouchDB(this.dbname);
+        this._indexes = this.index && this.index.split(/[ *, *]/) || [];
+        for (var i = 0; i < this._indexes.length; i++) {
+          this.createIndex(this._indexes[i]);
+        }
         this._remoteChanged();
         if (!this.noAutoChanges) {
           this.changes(function() {
@@ -245,28 +241,20 @@
         .then(this._statusdone.bind(this));;
     },
 
-    _indexChanged: function() {
-      this._indexes = this.index && this.index.split(/[ *, *]/) || [];
-      for (var i = 0; i < this._indexes.length; i++) {
-        this.createIndex(this._indexes[i])
-      }
-    },
-
     createIndex: function(prop) {
       var views = {};
       views[prop] = {
-          map: "function(doc){if(doc." + prop + ") emit(doc." + prop + ")}"
+        map: "function(doc){if(doc." + prop + ") emit(doc." + prop + ")}"
       }
       var idx = {
         _id: '_design/' + prop,
         views: views
       };
       this._db.put(idx)
-      .then(function () {
-        return this._db.query(prop, {stale: 'update_after'});
-      }).catch(function (err) {
+      .catch(function (err) {
         if (err.name != 'conflict') throw(err);
-      });
+      }.bind(this));
+      return this.query();
     },
     /**
      * Sync
