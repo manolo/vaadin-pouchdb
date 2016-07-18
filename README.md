@@ -6,6 +6,8 @@ A polymer web component wrapping [PouchDB](http://pouchdb.com/).
 It's goal is the simplicity of setting up an application which works online / offline.
 Nothing else needed for observing connectivity, changes in a list, etc.
 
+Disclaimer: I have developed this component on my Comunity-Fridays hours at Vaadin, this is the reason of the component's name. The element is not part of the official set of Vaadin Core Elements.
+
 ## Quick Start
 
 ```
