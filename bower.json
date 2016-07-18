@@ -4,7 +4,7 @@
   "homepage": "https://github.com/manolo/vaadin-pouchdb",
   "main": "vaadin-pouchdb.html",
   "authors": [
-    "Manolo Carrasco Moñino"
+    "Manolo Carrasco Moñino <manolo@apache.org>"
   ],
   "license": "Apache",
   "ignore": [
@@ -15,5 +15,13 @@
   "dependencies": {
     "pouchdb": "^5.3.1",
     "polymer": "Polymer/polymer#^1.0.0"
-  }
+  },
+  "keywords": [
+    "web-components",
+    "vaadin",
+    "pouchdb",
+    "couchdb",
+    "database",
+    "offline"
+  ]
 }
