@@ -1,6 +1,6 @@
 {
   "name": "vaadin-pouchdb",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "homepage": "https://github.com/manolo/vaadin-pouchdb",
   "main": "vaadin-pouchdb.html",
   "authors": [
@@ -18,10 +18,12 @@
   },
   "keywords": [
     "web-components",
+    "polymer",
     "vaadin",
     "pouchdb",
     "couchdb",
     "database",
+    "pwa",
     "offline"
   ]
 }
