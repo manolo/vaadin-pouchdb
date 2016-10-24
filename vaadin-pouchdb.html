@@ -35,12 +35,13 @@
         notify: true
       },
       queryString: {
-        type: String
+        type: String,
+        value: ""
       }
     },
 
     observers: [
-      '_dbnameChanged(dbname)',
+      '_dbnameChanged(dbname, queryString)',
       '_remoteChanged(remote)',
       '_onDataChanged(data.*)'
     ],
