@@ -6,6 +6,30 @@
 <script>
   Polymer({
     is: 'vaadin-pouchdb',
+
+    listeners: {
+      /**
+       * Connected to the database
+       * @event pouchdb-connect
+       */
+      /**
+       * A change in the data.
+       * @event pouchdb-changes
+       */
+      /**
+       * Synchronisation paused
+       * @event pouchdb-sync-paused
+       */
+      /**
+       * Synchronisation change
+       * @event pouchdb-sync-change
+       */
+      /**
+       * Synchronisation active
+       * @event pouchdb-sync-active
+       */
+    },
+
     properties: {
       liveSync: {
         type: Boolean,
@@ -35,12 +59,13 @@
         notify: true
       },
       queryString: {
-        type: String
+        type: String,
+        value: ""
       }
     },
 
     observers: [
-      '_dbnameChanged(dbname)',
+      '_dbnameChanged(dbname, queryString)',
       '_remoteChanged(remote)',
       '_onDataChanged(data.*)'
     ],
@@ -82,6 +107,9 @@
       if (this.dbname) {
         console.log("PouchDB local connection to: " + this.dbname);
         this._db = new PouchDB(this.dbname);
+        this.async(function() {
+          this.fire('pouchdb-connect', this.dbname);
+        }, 1000);
         this._indexes = this.index && this.index.split(/[ *, *]/) || [];
         for (var i = 0; i < this._indexes.length; i++) {
           this.createIndex(this._indexes[i]);
@@ -201,9 +229,10 @@
         since: 'now',
         live: true,
         include_docs: true
-      }).on('change', function(obj){
+      }).on('change', function(obj) {
         func(obj.doc);
-      });
+        this.fire('pouchdb-changes', obj);
+      }.bind(this));
       return this._changesHandler;
     },
 
@@ -275,12 +304,17 @@
       // TODO: normally the sync is in paused status, seems that active is
       // only for the very short time some data is being transferred.
       var h = this._db.sync(this.remote, opts);
-      h.on('paused', this._statusdone.bind(this))
-        .on('change', function() {
-          this.status = 'change';
+      h.on('paused', function(o) {
+          this.status = 'done';
+          this.fire('pouchdb-sync-paused', o)
         }.bind(this))
-        .on('active', function() {
+        .on('change', function(o) {
+          this.status = 'change';
+          this.fire('pouchdb-sync-change', o)
+        }.bind(this))
+        .on('active', function(o) {
           this.status = 'syncing';
+          this.fire('pouchdb-sync-active', o)
         }.bind(this));
       if (fnc) {
         h.on('change', fnc)
@@ -422,3 +456,4 @@ Polymer.Vaadin.Conf = {
 };
 
 </script>
+
