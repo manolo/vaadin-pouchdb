@@ -1,6 +1,6 @@
 {
   "name": "vaadin-pouchdb",
-  "version": "0.0.2",
+  "version": "0.0.5",
   "homepage": "https://github.com/manolo/vaadin-pouchdb",
   "main": "vaadin-pouchdb.html",
   "authors": [
