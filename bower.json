@@ -14,7 +14,7 @@
   ],
   "dependencies": {
     "pouchdb": "^6.0.0",
-    "polymer": "Polymer/polymer#^1.0.0"
+    "polymer": "^2.0.0"
   },
   "keywords": [
     "web-components",
