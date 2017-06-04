@@ -59,12 +59,22 @@
     _dbnameChanged: function() {
       this.cancelChanges();
       this.close();
+      this.data = [];
       if (this.dbname) {
         this._db = new PouchDB(this.dbname);
+        if (this._remotePending) {
+          this._remoteChanged();
+        }
       }
     },
 
     _remoteChanged: function() {
+      if (!this._db) {
+        this._remotePending = true;
+        return;
+      }
+      this._remotePending = false;
+
       this.cancelSync();
       if (this.remote) this.sync()
        .on('change', function(o) {
@@ -155,6 +165,9 @@
      * @param {Function} func
      */
     changes: function(func, conf) {
+      if (!this._db) {
+        return;
+      }
       this._changesHandler = this._db.changes(conf || {
         since: 'now',
         live: true,
@@ -185,6 +198,10 @@
      * @return {DbPromise} a promise
      */
     query: function(query, conf) {
+      if (!this._db) {
+        return;
+      }
+
       conf = conf || {include_docs: true, descending: this.descending};
       query = query || this._indexes && this._indexes[0];
       this.status ='querying';
