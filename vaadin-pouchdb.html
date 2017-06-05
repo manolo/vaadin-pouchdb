@@ -104,6 +104,7 @@
       this.cancelSync();
       this.cancelChanges();
       this.close();
+      this.data = [];
       if (this.dbname) {
         console.log("PouchDB local connection to: " + this.dbname);
         this._db = new PouchDB(this.dbname);
@@ -246,6 +247,28 @@
       return this.query();
     },
 
+    _debounce: function(name, fnc, timeout) {
+      name = '__' + name;
+      if (!this[name]) {
+        var p = new Promise((resolve, reject) => {
+          this[name] = Polymer.Debouncer.debounce(this[name], Polymer.Async.timeOut.after(timeout), () => {
+            var res = fnc();
+            if (res && res.then) {
+              res.then((r) => {
+                this[name] = undefined;
+                resolve(r);
+              })
+            } else {
+              this[name] = undefined;
+              resolve(res);
+            }
+          });
+        });
+        this[name].promise = p;
+      }
+      return this[name].promise;
+    },
+
     /**
      * Get all docs matching the query string if provided,
      * otherwise we will use the default index defined as an attribute.
@@ -259,15 +282,22 @@
       this.status = 'query';
       conf = conf || {include_docs: true, descending: this.descending};
       query = this.queryString || query || this._indexes && this._indexes[0];
-      return (query ? this._db.query(query, conf) : this._db.allDocs(conf))
-        .then(function(req) {
-          if (req.rows) {
-            this.data = req.rows.map(function(row) {
-              return row.doc;
-            });
-          }
-        }.bind(this))
-        .then(this._statusdone.bind(this));;
+
+      return this._debounce('query', () => {
+        console.log("Running Query");
+        return (query ? this._db.query(query, conf) : this._db.allDocs(conf))
+          .then(function(req) {
+            if (req.rows) {
+              this.data = req.rows.map(function(row) {
+                return row.doc;
+              });
+            } else {
+              this.data = []
+            }
+            console.log('Query returned: ' + this.data.length + ' rows');
+          }.bind(this))
+          .then(this._statusdone.bind(this));
+      }, 250);
     },
 
     createIndex: function(prop) {
@@ -285,6 +315,7 @@
       }.bind(this));
       return this.query();
     },
+
     /**
      * Sync
      *
@@ -301,6 +332,7 @@
       if (this.liveSync) {
         opts.live = opts.retry = true;
       }
+      console.log("PouchDB syncing local: " + this.dbname + " to: " + this.remote + " " + opts);
       // TODO: normally the sync is in paused status, seems that active is
       // only for the very short time some data is being transferred.
       var h = this._db.sync(this.remote, opts);
@@ -456,4 +488,3 @@ Polymer.Vaadin.Conf = {
 };
 
 </script>
-
