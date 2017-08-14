@@ -182,7 +182,7 @@
      */
     info: function(info, fnc, err) {
       this.status = 'info';
-      return this._db
+      return this._db && this._db
         .changes({since: info.update_seq, onError: err, onChange: fnc, continuous: true})
         .then(this._statusdone.bind(this));
     },
@@ -196,7 +196,7 @@
      */
     post: function(obj) {
       this.status = 'post';
-      return this._db.post(obj).then(this._statusdone.bind(this));
+      return this._db && this._db.post(obj).then(this._statusdone.bind(this));
     },
 
     /**
@@ -208,7 +208,7 @@
      */
     put: function(obj) {
       this.status = 'put';
-      return this._db.put(obj).then(this._statusdone.bind(this));
+      return this._db && this._db.put(obj).then(this._statusdone.bind(this));
     },
 
     /**
@@ -219,7 +219,7 @@
      * @return {DbPromise} a promise
      */
     save: function(obj) {
-      return obj._id ? this._db.put(obj) : this._db.post(obj);
+      return this._db && obj._id ? this._db.put(obj) : this._db.post(obj);
     },
 
     /**
@@ -231,7 +231,7 @@
      */
     remove: function(obj) {
       this.status = 'remove';
-      return this._db.remove(obj).then(this._statusdone.bind(this));
+      return this._db && this._db.remove(obj).then(this._statusdone.bind(this));
     },
 
     /**
@@ -242,7 +242,7 @@
      */
     changes: function(func, conf) {
       console.log('Vaadin-PouchDB listening to changes in: ' + this.dbname);
-      this._changesHandler = this._db.changes(conf || {
+      this._changesHandler = this._db && this._db.changes(conf || {
         since: 'now',
         live: true,
         include_docs: true
@@ -325,7 +325,7 @@
         _id: '_design/' + prop,
         views: views
       };
-      this._db.put(idx)
+      this._db && this._db.put(idx)
       .catch(function (err) {
         if (err.name != 'conflict') throw(err);
       }.bind(this));
