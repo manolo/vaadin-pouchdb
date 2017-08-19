@@ -105,8 +105,8 @@
               this.post(is.object[a]);
             }
           }
-        } else if (/#\d/.test(e.path)) {
-          var obj = e.base[parseInt(/#(\d+)/.exec(e.path)[1])];
+        } else if (/[\.#]\d/.test(e.path)) {
+          var obj = e.base[parseInt(/[\.#](\d+)/.exec(e.path)[1])];
           this.post(obj);
         }
       }
@@ -504,3 +504,4 @@ Polymer.Vaadin.Conf = {
 };
 
 </script>
+
