@@ -14,16 +14,16 @@
   ],
   "dependencies": {
     "pouchdb": "^6.0.0",
-    "polymer": "^2.0.0"
+    "polymer": "Polymer/polymer#1.9 - 2"
   },
-  "keywords": [
-    "web-components",
-    "polymer",
-    "vaadin",
-    "pouchdb",
-    "couchdb",
-    "database",
-    "pwa",
-    "offline"
-  ]
+  "variants": {
+    "1.x": {
+      "dependencies": {
+        "polymer": "Polymer/polymer#^1.9"
+       }
+     }
+  },
+  "resolutions": {
+    "webcomponentsjs": "^1.0.0"
+  }
 }
