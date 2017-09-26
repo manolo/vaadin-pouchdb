@@ -267,7 +267,7 @@
       name = '__' + name;
       if (!this[name]) {
         var p = new Promise((resolve, reject) => {
-          this[name] = Polymer.Debouncer.debounce(this[name], Polymer.Async.timeOut.after(timeout), () => {
+          var cb = function() {
             var res = fnc();
             if (res && res.then) {
               res.then((r) => {
@@ -278,7 +278,14 @@
               this[name] = undefined;
               resolve(res);
             }
-          });
+          };
+
+          if (Polymer.Element) {
+            this[name] = Polymer.Debouncer.debounce(this[name], Polymer.Async.timeOut.after(timeout), cb);
+          } else {
+            this[name] = {};
+            this.debounce(name, cb, timeout);
+          }
           this[name].promise = p;
         });
         return p;
@@ -506,4 +513,5 @@ Polymer.Vaadin.Conf = {
 };
 
 </script>
+
 
