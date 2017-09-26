@@ -279,10 +279,12 @@
               resolve(res);
             }
           });
+          this[name].promise = p;
         });
-        this[name].promise = p;
+        return p;
+      } else {
+        return this[name].promise;
       }
-      return this[name].promise;
     },
 
     /**
